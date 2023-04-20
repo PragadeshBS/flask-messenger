@@ -1,6 +1,5 @@
 .coverage
 .idea
 *.pyc
-*.db
 env
 htmlcov
