@@ -51,6 +51,20 @@ def _delete_message(ids):
         conn.commit()
 
 
+def _update_message(message, sender, ids):
+    with sqlite3.connect(app.config['DATABASE']) as conn:
+        c = conn.cursor()
+        q = "UPDATE messages SET message=?, sender=? WHERE id=?"
+
+        # Try/catch in case 'ids' isn't an iterable
+        try:
+            for i in ids:
+                c.execute(q, (message, sender, int(i)))
+        except TypeError:
+            c.execute(q, (message, sender, int(ids)))
+
+        conn.commit()
+
 # Standard routing (server-side rendered pages)
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -101,8 +115,8 @@ def logout():
 
 
 # RESTful routing (serves JSON to provide an external API)
-@app.route('/messages/api', methods=['GET'])
-@app.route('/messages/api/<int:id>', methods=['GET'])
+@app.route('/api/messages', methods=['GET'])
+@app.route('/api/messages/<int:id>', methods=['GET'])
 def get_message_by_id(id=None):
     messages = _get_message(id)
     if not messages:
@@ -111,7 +125,7 @@ def get_message_by_id(id=None):
     return jsonify({'messages': messages})
 
 
-@app.route('/messages/api', methods=['POST'])
+@app.route('/api/messages', methods=['POST'])
 def create_message():
     if not request.json or not 'message' in request.json or not 'sender' in request.json:
         return make_response(jsonify({'error': 'Bad request'}), 400)
@@ -121,9 +135,16 @@ def create_message():
     return get_message_by_id(id), 201
 
 
-@app.route('/messages/api/<int:id>', methods=['DELETE'])
+@app.route('/api/messages/<int:id>', methods=['DELETE'])
 def delete_message_by_id(id):
     _delete_message(id)
+    return jsonify({'result': True})
+
+@app.route('/api/messages/<int:id>', methods=['PATCH'])
+def update_message_by_id(id):
+    if not request.json or not 'message' in request.json or not 'sender' in request.json:
+        return make_response(jsonify({'error': 'Bad request'}), 400)
+    _update_message(request.json['message'], request.json['sender'], id)
     return jsonify({'result': True})
 
 
