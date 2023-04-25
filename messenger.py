@@ -1,9 +1,11 @@
 import os
 import sqlite3
-
 from flask import Flask, jsonify, make_response, redirect, render_template, request, session, url_for
-
 import settings
+from dotenv import load_dotenv
+import requests
+
+load_dotenv('.env')
 
 app = Flask(__name__)
 app.config.from_object(settings)
@@ -154,6 +156,19 @@ def update_message_by_id(id):
         return make_response(jsonify({'error': 'Bad request'}), 400)
     _update_message(request.json['message'], request.json['sender'], id)
     return jsonify({'result': True})
+
+
+@app.route('/api/sentiment/<string:id>', methods=['GET'])
+def get_message_sentiment(id):
+    hugging_face_url = 'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english'
+    headers = {
+        'Authorization': os.getenv('HUGGING_FACE_API'),
+    }
+    message = _get_message(id)
+    r = requests.post(url=hugging_face_url,
+                      headers=headers,
+                      data={'input': message[0]['message']})
+    return r.text
 
 
 if __name__ == '__main__':
