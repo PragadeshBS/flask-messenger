@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 from flask import Flask, jsonify, make_response, redirect, render_template, request, session, url_for
 import settings
@@ -168,7 +169,8 @@ def get_message_sentiment(id):
     r = requests.post(url=hugging_face_url,
                       headers=headers,
                       data={'input': message[0]['message']})
-    return r.text
+    print(json.loads(r.text))
+    return jsonify(json.loads(r.text)[0])
 
 
 if __name__ == '__main__':
