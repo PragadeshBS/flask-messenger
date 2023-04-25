@@ -18,13 +18,18 @@ def _get_message(id=None):
         if id:
             id = int(id)  # Ensure that we have a valid id value to query
             q = "SELECT * FROM messages WHERE id=? ORDER BY dt DESC"
-            rows = c.execute(q, (id,))
+            rows = c.execute(q, (id, ))
 
         else:
             q = "SELECT * FROM messages ORDER BY dt DESC"
             rows = c.execute(q)
 
-        return [{'id': r[0], 'dt': r[1], 'message': r[2], 'sender': r[3]} for r in rows]
+        return [{
+            'id': r[0],
+            'dt': r[1],
+            'message': r[2],
+            'sender': r[3]
+        } for r in rows]
 
 
 def _add_message(message, sender):
@@ -44,9 +49,9 @@ def _delete_message(ids):
         # Try/catch in case 'ids' isn't an iterable
         try:
             for i in ids:
-                c.execute(q, (int(i),))
+                c.execute(q, (int(i), ))
         except TypeError:
-            c.execute(q, (int(ids),))
+            c.execute(q, (int(ids), ))
 
         conn.commit()
 
@@ -64,6 +69,7 @@ def _update_message(message, sender, ids):
             c.execute(q, (message, sender, int(ids)))
 
         conn.commit()
+
 
 # Standard routing (server-side rendered pages)
 @app.route('/', methods=['GET', 'POST'])
@@ -100,7 +106,8 @@ def admin():
 def login():
     error = None
     if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME'] or request.form['password'] != app.config['PASSWORD']:
+        if request.form['username'] != app.config['USERNAME'] or request.form[
+                'password'] != app.config['PASSWORD']:
             error = 'Invalid username and/or password'
         else:
             session['logged_in'] = True
@@ -140,7 +147,8 @@ def delete_message_by_id(id):
     _delete_message(id)
     return jsonify({'result': True})
 
-@app.route('/api/messages/<int:id>', methods=['PATCH'])
+
+@app.route('/api/messages/<int:id>', methods=['PUT'])
 def update_message_by_id(id):
     if not request.json or not 'message' in request.json or not 'sender' in request.json:
         return make_response(jsonify({'error': 'Bad request'}), 400)
