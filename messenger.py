@@ -5,11 +5,16 @@ from flask import Flask, jsonify, make_response, redirect, render_template, requ
 import settings
 from dotenv import load_dotenv
 import requests
+from datetime import datetime
 
 load_dotenv('.env')
 
 app = Flask(__name__)
 app.config.from_object(settings)
+hugging_face_url = 'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english'
+hugging_face_headers = {
+    'Authorization': os.getenv('HUGGING_FACE_API'),
+}
 
 
 # Helper functions
@@ -80,8 +85,18 @@ def home():
     if request.method == 'POST':
         _add_message(request.form['message'], request.form['username'])
         redirect(url_for('home'))
+    messages = _get_message()
+    for i in range(len(messages)):
+        # Input string
+        date_string = messages[i]['dt']
 
-    return render_template('index.html', messages=_get_message())
+        # Format string matching the input string
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        # Convert string to datetime object
+        datetime_object = datetime.strptime(date_string, format_string)
+        messages[i]['dt'] = datetime_object.strftime("%d %b %Y %I:%M %p")
+    return render_template('index.html', messages=messages)
 
 
 @app.route('/about')
@@ -102,6 +117,15 @@ def admin():
     messages = _get_message()
     messages.reverse()
 
+    # print([message['message'] for message in messages])
+    data = [{'text': message['message']} for message in messages]
+    # print(data)
+    r = requests.post(url=hugging_face_url,
+                      headers=hugging_face_headers,
+                      data=json.dumps(data))
+    res = json.loads(r.text)
+    for i in range(len(messages)):
+        messages[i]['sentiment'] = res[i][0]['label']
     return render_template('admin.html', messages=messages)
 
 
@@ -165,14 +189,11 @@ def update_message_by_id(id):
 
 
 @app.route('/api/sentiment/<string:id>', methods=['GET'])
+@app.route('/api/sentiment')
 def get_message_sentiment(id):
-    hugging_face_url = 'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english'
-    headers = {
-        'Authorization': os.getenv('HUGGING_FACE_API'),
-    }
     message = _get_message(id)
     r = requests.post(url=hugging_face_url,
-                      headers=headers,
+                      headers=hugging_face_headers,
                       data={'input': message[0]['message']})
     print(json.loads(r.text))
     return jsonify(json.loads(r.text)[0])

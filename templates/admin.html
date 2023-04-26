@@ -11,6 +11,7 @@ block content %} {# Main table and form layout #}
               <th>id</th>
               <th>Time/date</th>
               <th>Message</th>
+              <th>Sentiment</th>
               <th>Sender</th>
               <th>Delete?</th>
             </tr>
@@ -21,6 +22,7 @@ block content %} {# Main table and form layout #}
               <td>{{ loop.index }}</td>
               <td>{{ row.dt }}</td>
               <td>{{ row.message }}</td>
+              <td>{{ row.sentiment }}</td>
               <td>{{ row.sender }}</td>
               <td>
                 <label for="delete-{{ row.id }}" class="sr-only"

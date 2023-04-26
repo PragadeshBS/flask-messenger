@@ -4,10 +4,14 @@ block content %}
 <div class="container">
   <div class="row">
     <div class="col-md-4">
+      {% if 'user' not in session %}
+      <div>
+        <h3><a href="{{url_for('login')}}">Login</a> to tweet!</h3>
+      </div>
+      {% else %}
       <h2>Say something</h2>
       <form id="mainform" method="post">
-        {% if 'user' not in session %}
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label for="username">Sender:</label>
           <input
             id="username"
@@ -16,15 +20,15 @@ block content %}
             placeholder="Sender"
             required
           />
+        </div> -->
+        <div class="form-group">
+          <input
+            type="hidden"
+            id="username"
+            name="username"
+            value="{{ session['user'] }}"
+          />
         </div>
-        {% else %}
-        <input
-          type="hidden"
-          id="username"
-          name="username"
-          value="{{ session['user'] }}"
-        />
-        {% endif %}
         <div class="form-group">
           <label for="message">Enter your message:</label>
           <input
@@ -37,14 +41,17 @@ block content %}
         </div>
         <input class="btn btn-default" type="submit" value="Submit" />
       </form>
+      {% endif %}
     </div>
     <div class="col-md-8">
-      <h2>Messages</h2>
+      <h2>Recent Tweets</h2>
       {% if messages %} {% for m in messages %}
-      <p>"{{ m.message }}"</p>
-      <p>{{ m.sender }} ({{ m.dt }})</p>
+      <div class="tweet-card">
+        <p style="font-size: 2rem">"{{ m.message }}"</p>
+        <p class="small">{{ m.sender }}, {{ m.dt }}</p>
+      </div>
       {% endfor %} {% else %}
-      <p>No messages found.</p>
+      <p>No tweets yet, be the first one to start the conversation :P</p>
       {% endif %}
     </div>
   </div>
