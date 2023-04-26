@@ -109,18 +109,23 @@ def admin():
 def login():
     error = None
     if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME'] or request.form[
-                'password'] != app.config['PASSWORD']:
-            error = 'Invalid username and/or password'
-        else:
+        if request.form['username'] == app.config['USERNAME'] and request.form[
+                'password'] == app.config['PASSWORD']:
             session['logged_in'] = True
             return redirect(url_for('admin'))
+        elif request.form['username'] != "" and request.form['password'] != "":
+            # session['logged_in'] = True
+            session['user'] = request.form['username']
+            return redirect(url_for('home'))
+        else:
+            error = 'Enter a  username and/or password'
     return render_template('login.html', error=error)
 
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('user', None)
     return redirect(url_for('home'))
 
 
