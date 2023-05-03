@@ -6,6 +6,7 @@ import settings
 from dotenv import load_dotenv
 import requests
 from datetime import datetime
+import bcrypt
 
 load_dotenv('.env')
 
@@ -79,6 +80,19 @@ def _update_message(message, sender, ids):
         conn.commit()
 
 
+def _is_valid_user(username, password):
+    with sqlite3.connect(app.config['DATABASE']) as conn:
+        c = conn.cursor()
+        q = "SELECT password FROM users WHERE username=?"
+        c.execute(q, (username, ))
+        password_in_db = c.fetchone()
+        if password_in_db is None:
+            return False
+        if bcrypt.checkpw(password.encode('utf-8'), password_in_db[0]):
+            return True
+        return False
+
+
 # Standard routing (server-side rendered pages)
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -137,13 +151,33 @@ def login():
                 'password'] == app.config['PASSWORD']:
             session['logged_in'] = True
             return redirect(url_for('admin'))
-        elif request.form['username'] != "" and request.form['password'] != "":
-            # session['logged_in'] = True
+        elif _is_valid_user(request.form['username'],
+                            request.form['password']):
             session['user'] = request.form['username']
             return redirect(url_for('home'))
         else:
-            error = 'Enter a  username and/or password'
+            error = 'Enter a valid username and/or password'
     return render_template('login.html', error=error)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    error = None
+    if request.method == 'POST':
+        if _is_valid_user(request.form['username'], request.form['password']):
+            error = 'Username already exists'
+        else:
+            with sqlite3.connect(app.config['DATABASE']) as conn:
+                c = conn.cursor()
+                salt = bcrypt.gensalt()
+                hashed_password = bcrypt.hashpw(
+                    request.form['password'].encode('utf-8'), salt)
+                q = "INSERT INTO users VALUES (NULL, ?, ?)"
+                c.execute(q, (request.form['username'], hashed_password))
+                conn.commit()
+            session['user'] = request.form['username']
+            return redirect(url_for('home'))
+    return render_template('register.html', error=error)
 
 
 @app.route('/logout')
@@ -205,12 +239,24 @@ if __name__ == '__main__':
     if not os.path.exists(app.config['DATABASE']):
         try:
             conn = sqlite3.connect(app.config['DATABASE'])
-
-            # Absolute path needed for testing environment
-            sql_path = os.path.join(app.config['APP_ROOT'], 'db_init.sql')
-            cmd = open(sql_path, 'r').read()
             c = conn.cursor()
-            c.execute(cmd)
+            create_messages_table_cmd = """
+                CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY,
+                dt TEXT NOT NULL,
+                message TEXT NOT NULL,
+                sender TEXT NOT NULL
+                );
+            """
+            create_users_table_cmd = """
+                CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL
+                );
+            """
+            c.execute(create_messages_table_cmd)
+            c.execute(create_users_table_cmd)
             conn.commit()
             conn.close()
         except IOError:

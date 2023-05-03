@@ -1,16 +1,16 @@
-{% extends "main.html" %} {% block title %}FlaskTweets | Login{% endblock %} {%
-block content %}
+{% extends "main.html" %} {% block title %}FlaskTweets | Register{% endblock %}
+{% block content %}
 
 <div class="container">
   <div class="row">
     <div class="col-md-4">
-      <h2>Please login:</h2>
+      <h2>Please register:</h2>
 
       {% if error %}
       <p class="text-danger">Error: {{ error }}</p>
       {% endif %}
 
-      <form action="{{ url_for('login') }}" method="post">
+      <form action="{{ url_for('register') }}" method="post">
         <div class="form-group">
           <label for="username">Username:</label>
           <input
@@ -31,11 +31,9 @@ block content %}
             required
           />
         </div>
-        <input class="btn btn-default" type="submit" value="Login" />
+        <input class="btn btn-default" type="submit" value="Register" />
       </form>
-      <div>
-        Don't have an account? <a href="{{ url_for('register') }}">Register</a>
-      </div>
+      <div>Have an account? <a href="{{ url_for('login') }}">Login</a></div>
     </div>
   </div>
 </div>

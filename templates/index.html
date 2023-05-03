@@ -4,9 +4,15 @@ block content %}
 <div class="container">
   <div class="row">
     <div class="col-md-4">
-      {% if 'user' not in session %}
+      {% if 'user' not in session and 'logged_in' not in session %}
       <div>
         <h3><a href="{{url_for('login')}}">Login</a> to tweet!</h3>
+      </div>
+      {% elif 'logged_in' in session %}
+      <div>
+        <h3>
+          <a href="{{url_for('admin')}}">Admin panel</a>
+        </h3>
       </div>
       {% else %}
       <h2>Say something</h2>
